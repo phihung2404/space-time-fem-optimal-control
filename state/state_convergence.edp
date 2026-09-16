@@ -1,0 +1,42 @@
+real T = 1.0;
+real kappa = 1.0;
+real v = 1.0;
+
+// Nghiệm giải tích và dữ liệu bài toán
+func uE  = sin(pi*x) * cos(pi*y);
+func u0  = sin(pi*x);
+func uEx = pi * cos(pi*x) * cos(pi*y);
+func fE  = -pi*sin(pi*x)*sin(pi*y) + v*pi*cos(pi*x)*cos(pi*y) + pi^2*sin(pi*x)*cos(pi*y);
+
+int GridStart = 2;
+int GridEnd = 8;
+
+ofstream fout("../results/state_convergence.dat");
+fout << "N\th\t||u-uh||_Y\tEOC\n";
+
+real hOld, errYOld;
+
+for (int i = GridStart; i <= GridEnd; i++) {
+    int N = 2^i;
+
+    mesh Th = square(N, N, [x, T*y]);
+    fespace Vh(Th, P1);
+    Vh uExact = uE, fExact = fE, uh, phih;
+
+    solve StateEquation(uh, phih) =
+        int2d(Th)(dy(uh) * phih)
+      + int2d(Th)(v * dx(uh) * phih)
+      + int2d(Th)(kappa * dx(uh) * dx(phih))
+      - int2d(Th)(fExact * phih)
+      + on(1, uh = u0)
+      + on(2, 4, uh = 0);
+
+    real h = Th.hmax;
+    real errY = sqrt(kappa * int2d(Th)((dx(uh) - uEx)^2));
+    real eocY = (i == GridStart) ? -1 : log(errYOld / errY) / log(hOld / h);
+
+    fout << N << "\t" << h << "\t" << errY << "\t" << eocY << "\n";
+
+    hOld = h;
+    errYOld = errY;
+}

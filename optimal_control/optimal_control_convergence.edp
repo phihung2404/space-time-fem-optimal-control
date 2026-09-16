@@ -1,0 +1,126 @@
+// Space-time FEM for parabolic optimal control
+// Representative numerical experiment from the undergraduate thesis.
+//
+// The second FreeFEM coordinate y represents the time variable t.
+
+real T = 1.0;
+real kappa = 1.0;
+
+// Exact velocity 
+func velocity = 0.1 * pi * cos(2.0 * pi * y);
+func L1 = 0.4 + 0.05 * sin(2.0 * pi * y);
+
+// Exact state and control for the test.
+func uE = (sin(10.0 * pi * (x - L1) + pi / 6.0)
+         + sin(10.0 * pi * L1 - pi / 6.0)) * sin(pi * y / 2.0);
+
+func uEx = 10.0 * pi * cos(10.0 * pi * (x - L1) + pi / 6.0)
+         * sin(pi * y / 2.0);
+
+func fE = (sin(10.0 * pi * (x - L1) + pi / 6.0)
+         + sin(10.0 * pi * L1 - pi / 6.0)) * sin(pi * y / 2.0);
+
+func fEt = (-pi / 2.0
+           * (sin(10.0 * pi * (x - L1) + pi / 6.0)
+           + sin(10.0 * pi * L1 - pi / 6.0))
+           * cos(pi * (1.0 - y) / 2.0)
+           + 10.0 * pi * velocity
+           * (-cos(10.0 * pi * (x - L1) + pi / 6.0)
+           + cos(10.0 * pi * L1 - pi / 6.0))
+           * sin(pi * (1.0 - y) / 2.0));
+
+func fEx = 10.0 * pi * cos(10.0 * pi * (x - L1) + pi / 6.0)
+         * sin(pi * y / 2.0);
+
+func fExx = -100.0 * pi^2 * sin(10.0 * pi * (x - L1) + pi / 6.0)
+          * sin(pi * (1.0 - y) / 2.0);
+
+// Numerical experiment parameters.
+int GridStart = 2;
+int GridEnd = 8;
+int GammaStart = 5;
+int GammaEnd = 5;
+
+// Output file
+ofstream fout("../results/optimal_control_convergence.dat");
+fout << "Gamma\tN\t||u-uh||Y\tEOC_u\t||p-ph||Y\tEOC_p\ttotalError\tEOC_total\n";
+
+real gamma;
+int N;
+
+for (int i = GammaStart; i <= GammaEnd; ++i) {
+    real uErrorYOld = 0.0;
+    real pErrorYOld = 0.0;
+    real totalErrorOld = 0.0;
+
+    gamma = pow(10.0, -real(i));
+
+    for (int j = GridStart; j <= GridEnd; ++j) {
+        N = int(pow(2.0, j));
+
+        cout << "------------------------------------------------------------" << endl;
+        cout << "gamma = " << gamma << ", N = " << N << endl;
+
+        // The second coordinate y is interpreted as time t in [0,T].
+        mesh Th = square(N, N, [x, T * y]);
+
+        fespace Vh(Th, P1);
+        Vh uExact, pExact, pExactT, pExactX, pExactXX, uDesired;
+        Vh uh, ph, vh, qh;
+
+        uExact = uE;
+        pExact = -gamma * fE;
+        pExactT = -gamma * fEt;
+        pExactX = -gamma * fEx;
+        pExactXX = -gamma * fExx;
+
+        // The desired state corresponding to the exact state/adjoint.
+        uDesired = uExact + pExactT + velocity * pExactX + kappa * pExactXX;
+
+        // State-adjoint optimality system.
+        solve OptimalControlSystem(uh, ph, vh, qh) =
+            int2d(Th)(
+                  dy(uh) * vh
+                + velocity * dx(uh) * vh
+                + kappa * dx(uh) * dx(vh)
+                + (1.0 / gamma) * kappa * dx(ph) * dx(vh)
+                + uh * qh
+            )
+            - int2d(Th)(
+                  ph * dy(qh)
+                + velocity * ph * dx(qh)
+                + kappa * dx(ph) * dx(qh)
+            )
+            - int2d(Th)(uDesired * qh)
+            + on(1, 2, 4, uh = 0)
+            + on(2, 3, 4, ph = 0);
+
+        real uErrorY;
+        real pErrorY;
+        real totalError;
+        real eocUErrorY = -1.0;
+        real eocPErrorY = -1.0;
+        real eocTotalError = -1.0;
+
+        uErrorY = sqrt(int2d(Th)(kappa * (dx(uExact) - uEx)^2));
+        pErrorY = sqrt(int2d(Th)(kappa * (dx(pExact) - pExactX)^2));
+        totalError = sqrt(gamma * uErrorY^2 + pErrorY^2);
+
+        if (j > GridStart) {
+            eocUErrorY = log(uErrorYOld / uErrorY) / log(2.0);
+            eocPErrorY = log(pErrorYOld / pErrorY) / log(2.0);
+            eocTotalError = log(totalErrorOld / totalError) / log(2.0);
+        }
+
+        fout << gamma << "\t"
+             << N << "\t"
+             << uErrorY << "\t" << eocUErrorY << "\t"
+             << pErrorY << "\t" << eocPErrorY << "\t"
+             << totalError << "\t" << eocTotalError << endl;
+
+        uErrorYOld = uErrorY;
+        pErrorYOld = pErrorY;
+        totalErrorOld = totalError;
+    }
+}
+
