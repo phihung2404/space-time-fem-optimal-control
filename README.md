@@ -2,7 +2,7 @@
 
 Đồ án tốt nghiệp — repo code kèm theo.
 
-Repo chứa các thí nghiệm kiểm chứng số cho phương pháp phần tử hữu hạn không-thời gian (Petrov-Galerkin), áp dụng cho phương trình advection-diffusion và bài toán điều khiển tối ưu.
+Repo chứa các ví dụ kiểm chứng số cho phương pháp phần tử hữu hạn không-thời gian, áp dụng cho phương trình advection-diffusion và bài toán điều khiển tối ưu.
 
 Có hai nghiên cứu hội tụ: một cho phương trình trạng thái và một cho bài toán điều khiển tối ưu. Code được viết bằng FreeFEM++, kết quả được xử lý và vẽ bằng Python.
 
