@@ -2,7 +2,7 @@
 
 Đồ án tốt nghiệp — repo code kèm theo.
 
-Repo chứa các ví dụ kiểm chứng số cho phương pháp phần tử hữu hạn không-thời gian, áp dụng cho phương trình advection-diffusion và bài toán điều khiển tối ưu.
+Repo chứa các thí nghiệm kiểm chứng số cho phương pháp phần tử hữu hạn không-thời gian (Petrov-Galerkin), áp dụng cho phương trình advection-diffusion và bài toán điều khiển tối ưu.
 
 Có hai nghiên cứu hội tụ: một cho phương trình trạng thái và một cho bài toán điều khiển tối ưu. Code được viết bằng FreeFEM++, kết quả được xử lý và vẽ bằng Python.
 
@@ -58,3 +58,9 @@ Mỗi script vẽ sẽ ghi file `.png` vào `results/` và hiển thị luôn.
 
 **`optimal_control_convergence.dat`** — các cột: `Gamma`, `N`, `||u-uh||_Y`, `EOC_u`, `||p-ph||_Y`, `EOC_p`, `totalError`, `EOC_total`,
 trong đó `totalError = sqrt(gamma * ||u-uh||_Y^2 + ||p-ph||_Y^2)`.
+
+## Kết quả mô phỏng (Numerical Results)
+
+| Phương trình trạng thái | Bài toán điều khiển tối ưu |
+| :---: | :---: |
+| ![State Convergence](results/state_convergence.png) | ![Optimal Control Convergence](results/optimal_control_convergence.png) |
